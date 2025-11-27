@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Expense Splitter App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        :root {
+            --bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --text: #222222;
+            --primary: #007bff;
+            --primary-soft: #e6f2ff;
+            --border: #dddddd;
+        }
+        body.dark {
+            --bg: #121212;
+            --card-bg: #1f1f1f;
+            --text: #f5f5f5;
+            --primary: #4dabf7;
+            --primary-soft: #1a365d;
+            --border: #333333;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 15px;
+            background: var(--bg);
+            color: var(--text);
+        }
+        h1, h2, h3, h4 {
+            margin-top: 0;
+            color: var(--text);
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .card {
+            background: var(--card-bg);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 1px solid var(--border);
+        }
+        input, select, button {
+            padding: 9px;
+            width: 100%;
+            margin-top: 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            box-sizing: border-box;
+            background: #ffffff;
+        }
+        body.dark input,
+        body.dark select {
+            background: #2a2a2a;
+            color: var(--text);
+            border-color: var(--border);
+        }
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button.small {
+            padding: 4px 8px;
+            font-size: 12px;
+            width: auto;
+            margin-left: 5px;
+        }
+        button.secondary {
+            background: #6c757d;
+        }
+        button.outline {
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .result {
+            padding: 8px;
+            background: var(--primary-soft);
+            border-left: 4px solid var(--primary);
+            margin-bottom: 6px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .flex {
+            display: flex;
+            gap: 10px;
+        }
+        .flex > div {
+            flex: 1;
+        }
+        .tag {
+            display: inline-block;
+            background: var(--primary-soft);
+            color: var(--text);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 4px;
+            margin-top: 4px;
+        }
+        .list-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .muted {
+            font-size: 13px;
+            color: #777;
+        }
+        body.dark .muted {
+            color: #bbbbbb;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .toggle {
+            cursor: pointer;
+            font-size: 14px;
+            padding: 6px 10px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--card-bg);
+        }
+        .toggle span {
+            font-size: 18px;
+        }
+        @media (max-width: 600px) {
+            .flex {
+                flex-direction: column;
+            }
+        }
+        @media print {
+            button, .toggle {
+                display: none !important;
+            }
+            body {
+                background: #ffffff;
+            }
+            .card {
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <div class="header-bar">
+        <h2>💰 Expense Splitter</h2>
+        <div class="toggle" onclick="toggleDarkMode()">
+            <span id="themeIcon">🌙</span>
+            <span id="themeLabel">Dark mode</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>1. Participants</h3>
+        <div class="flex">
+            <div><input id="personName" placeholder="Person Name (e.g. Ananda)"></div>
+            <div style="max-width:130px;">
+                <button onclick="addPerson()">Add</button>
+            </div>
+        </div>
+        <div id="personList" style="margin-top:10px;"></div>
+        <p class="muted">Tip: Add everyone first before adding expenses.</p>
+    </div>
+
+    <div class="card">
+        <h3>2. Add Expense</h3>
+        <input id="expenseName" placeholder="Expense description (e.g. Rent, Flight)">
+        <input id="expenseAmount" type="number" step="0.01" placeholder="Amount (e.g. 120.50)">
+
+        <label>Who Paid?</label>
+        <select id="paidBy"></select>
+
+        <label>Split Between:</label>
+        <div>
+            <label><input type="checkbox" id="splitAll" onchange="toggleSplitAll()"> Split between everyone</label>
+        </div>
+        <div id="splitBetween" style="margin-top:5px;"></div>
+
+        <div class="toolbar">
+            <button onclick="addExpense()">Add Expense</button>
+            <button class="secondary" onclick="clearExpenseInputs()">Clear Inputs</button>
+        </div>
+
+        <div id="expenseList" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="card">
+        <h3>3. Settlement</h3>
+        <div class="toolbar">
+            <button onclick="calculate()">Calculate Settlement</button>
+            <button class="outline" onclick="exportCSV()">Export as CSV (Excel)</button>
+            <button class="outline" onclick="window.print()">Print / Save as PDF</button>
+        </div>
+        <h4 style="margin-top:15px;">Balances</h4>
+        <div id="balanceView"></div>
+        <h4>Who owes whom</h4>
+        <div id="result"></div>
+    </div>
+</div>
+
+<script>
+let people = [];
+let expenses = [];
+
+// --- DARK MODE ---
+function toggleDarkMode() {
+    document.body.classList.toggle("dark");
+    const isDark = document.body.classList.contains("dark");
+    document.getElementById("themeIcon").textContent = isDark ? "☀️" : "🌙";
+    document.getElementById("themeLabel").textContent = isDark ? "Light mode" : "Dark mode";
+}
+
+// --- PARTICIPANTS ---
+function addPerson() {
+    const nameInput = document.getElementById("personName");
+    const name = nameInput.value.trim();
+    if (!name) return;
+    if (people.includes(name)) {
+        alert("Name already exists.");
+        return;
+    }
+    people.push(name);
+    nameInput.value = "";
+    updatePeopleUI();
+}
+
+function editPerson(index) {
+    const current = people[index];
+    const updated = prompt("Edit name:", current);
+    if (!updated) return;
+    if (people.includes(updated) && updated !== current) {
+        alert("Another participant already has this name.");
+        return;
+    }
+
+    // Update name in people and in expenses (paidBy and splitAmong)
+    people[index] = updated;
+    expenses.forEach(e => {
+        if (e.paidBy === current) e.paidBy = updated;
+        e.splitAmong = e.splitAmong.map(p => p === current ? updated : p);
+    });
+
+    updatePeopleUI();
+    updateExpenseList();
+}
+
+function deletePerson(index) {
+    const name = people[index];
+
+    // Check if used in any expense
+    const used = expenses.some(e => e.paidBy === name || e.splitAmong.includes(name));
+    if (used) {
+        alert("This person is used in expenses. Delete or edit those expenses first.");
+        return;
+    }
+
+    if (!confirm(`Remove ${name}?`)) return;
+    people.splice(index, 1);
+    updatePeopleUI();
+}
+
+function updatePeopleUI() {
+    const paidBy = document.getElementById("paidBy");
+    const splitBetween = document.getElementById("splitBetween");
+    const personList = document.getElementById("personList");
+
+    paidBy.innerHTML = "";
+    splitBetween.innerHTML = "";
+    personList.innerHTML = "";
+
+    if (people.length === 0) {
+        personList.innerHTML = "<span class='muted'>No participants yet.</span>";
+        return;
+    }
+
+    // Chips + edit/delete
+    people.forEach((p, idx) => {
+        const div = document.createElement("div");
+        div.className = "result";
+        div.style.background = "transparent";
+        div.style.borderLeft = "none";
+        div.innerHTML = `
+            <div class="list-item-header">
+                <span><b>${p}</b></span>
+                <span>
+                    <button class="small outline" onclick="editPerson(${idx})">Edit</button>
+                    <button class="small secondary" onclick="deletePerson(${idx})">Delete</button>
+                </span>
+            </div>
+        `;
+        personList.appendChild(div);
+    });
+
+    // Paid by dropdown
+    people.forEach(p => {
+        paidBy.innerHTML += `<option value="${p}">${p}</option>`;
+    });
+
+    // Split between checkboxes
+    people.forEach(p => {
+        splitBetween.innerHTML += `<label><input type="checkbox" value="${p}"> ${p}</label><br>`;
+    });
+}
+
+// --- SPLIT ALL TOGGLE ---
+function toggleSplitAll() {
+    const checked = document.getElementById("splitAll").checked;
+    const boxes = document.querySelectorAll("#splitBetween input[type='checkbox']");
+    boxes.forEach(cb => cb.checked = checked);
+}
+
+// --- EXPENSES ---
+function clearExpenseInputs() {
+    document.getElementById("expenseName").value = "";
+    document.getElementById("expenseAmount").value = "";
+    document.getElementById("paidBy").selectedIndex = 0;
+    document.getElementById("splitAll").checked = false;
+    const boxes = document.querySelectorAll("#splitBetween input[type='checkbox']");
+    boxes.forEach(cb => cb.checked = false);
+}
+
+function addExpense() {
+    if (people.length === 0) {
+        alert("Add at least one participant first.");
+        return;
+    }
+
+    const name = document.getElementById("expenseName").value.trim();
+    const amount = parseFloat(document.getElementById("expenseAmount").value);
+    const paidBy = document.getElementById("paidBy").value;
+
+    const splitCheckboxes = document.querySelectorAll("#splitBetween input[type='checkbox']");
+    let splitAmong = [];
+    splitCheckboxes.forEach(cb => { if (cb.checked) splitAmong.push(cb.value); });
+
+    if (!name || !amount || isNaN(amount) || amount <= 0 || splitAmong.length === 0) {
+        alert("Please enter a name, valid amount, and at least one person in split.");
+        return;
+    }
+
+    expenses.push({ name, amount, paidBy, splitAmong });
+
+    clearExpenseInputs();
+    updateExpenseList();
+}
+
+function editExpense(index) {
+    const e = expenses[index];
+    const newName = prompt("Edit expense name:", e.name) ?? e.name;
+    const newAmountStr = prompt("Edit amount:", e.amount.toString());
+    const newAmount = parseFloat(newAmountStr);
+
+    if (isNaN(newAmount) || newAmount <= 0) {
+        alert("Invalid amount.");
+        return;
+    }
+
+    // For simplicity, keep paidBy and splitAmong same (can extend later)
+    e.name = newName.trim() || e.name;
+    e.amount = newAmount;
+
+    updateExpenseList();
+}
+
+function deleteExpense(index) {
+    if (!confirm("Delete this expense?")) return;
+    expenses.splice(index, 1);
+    updateExpenseList();
+}
+
+function updateExpenseList() {
+    const div = document.getElementById("expenseList");
+    div.innerHTML = "";
+
+    if (expenses.length === 0) {
+        div.innerHTML = "<span class='muted'>No expenses added yet.</span>";
+        return;
+    }
+
+    div.innerHTML = "<h4>Expenses:</h4>";
+    expenses.forEach((e, idx) => {
+        div.innerHTML += `
+        <div class="result">
+            <div class="list-item-header">
+                <span><b>${e.name}</b> — $${e.amount.toFixed(2)}</span>
+                <span>
+                    <button class="small outline" onclick="editExpense(${idx})">Edit</button>
+                    <button class="small secondary" onclick="deleteExpense(${idx})">Delete</button>
+                </span>
+            </div>
+            <div class="muted">
+                Paid by: <b>${e.paidBy}</b><br>
+                Split among: ${e.splitAmong.join(", ")}
+            </div>
+        </div>`;
+    });
+}
+
+// --- CALCULATION ---
+function calculate() {
+    if (people.length === 0 || expenses.length === 0) {
+        alert("Add at least one participant and one expense.");
+        return;
+    }
+
+    let balance = {};
+    people.forEach(p => balance[p] = 0);
+
+    expenses.forEach(e => {
+        const share = e.amount / e.splitAmong.length;
+        e.splitAmong.forEach(p => {
+            balance[p] -= share;
+        });
+        balance[e.paidBy] += e.amount;
+    });
+
+    // Show balances
+    const balanceDiv = document.getElementById("balanceView");
+    balanceDiv.innerHTML = "";
+    for (let p of people) {
+        const val = balance[p];
+        const txt = val >= 0
+            ? `${p} should receive $${val.toFixed(2)}`
+            : `${p} should pay $${(-val).toFixed(2)}`;
+        balanceDiv.innerHTML += `<div class="result">${txt}</div>`;
+    }
+
+    // Compute who owes whom
+    const resultDiv = document.getElementById("result");
+    resultDiv.innerHTML = "";
+
+    let creditors = [], debtors = [];
+
+    for (let p in balance) {
+        if (balance[p] > 0.005) creditors.push([p, balance[p]]);
+        else if (balance[p] < -0.005) debtors.push([p, -balance[p]]);
+    }
+
+    creditors.sort((a,b) => b[1] - a[1]);
+    debtors.sort((a,b) => b[1] - a[1]);
+
+    if (creditors.length === 0 || debtors.length === 0) {
+        resultDiv.innerHTML = "<span class='muted'>All settled. No one owes anything.</span>";
+        return;
+    }
+
+    for (let d of debtors) {
+        let debtor = d[0], owe = d[1];
+        for (let c of creditors) {
+            let creditor = c[0], receive = c[1];
+            if (owe <= 0) break;
+
+            let pay = Math.min(owe, receive);
+
+            if (pay > 0.005) {
+                resultDiv.innerHTML += `
+                <div class='result'>
+                    <b>${debtor}</b> → <b>${creditor}</b>: $${pay.toFixed(2)}
+                </div>`;
+                c[1] -= pay;
+                owe -= pay;
+            }
+        }
+    }
+}
+
+// --- EXPORT CSV (Excel) ---
+function exportCSV() {
+    if (expenses.length === 0) {
+        alert("No expenses to export.");
+        return;
+    }
+
+    let lines = [];
+    lines.push("Expense,Amount,Paid By,Split Among");
+
+    expenses.forEach(e => {
+        const row = [
+            `"${e.name.replace(/"/g, '""')}"`,
+            e.amount.toFixed(2),
+            `"${e.paidBy}"`,
+            `"${e.splitAmong.join(", ")}"`
+        ].join(",");
+        lines.push(row);
+    });
+
+    // Add balances
+    let balance = {};
+    people.forEach(p => balance[p] = 0);
+    expenses.forEach(e => {
+        const share = e.amount / e.splitAmong.length;
+        e.splitAmong.forEach(p => balance[p] -= share);
+        balance[e.paidBy] += e.amount;
+    });
+
+    lines.push("");
+    lines.push("Name,Balance (positive = receive, negative = pay)");
+    people.forEach(p => {
+        lines.push(`"${p}",${balance[p].toFixed(2)}`);
+    });
+
+    const csvContent = lines.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "expense_splitter_export.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+</script>
+
+</body>
+</html>
